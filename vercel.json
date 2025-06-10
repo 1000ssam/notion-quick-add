@@ -1,15 +1,4 @@
 {
-  "functions": {
-    "api/notion.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/notion/(.*)",
-      "destination": "/api/notion"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
