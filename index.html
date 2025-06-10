@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Quick Add</title>
+    <meta name="description" content="노션 데이터베이스에 빠르게 페이지를 추가하는 도구">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3182ce">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Notion Quick Add">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="icons/icon-placeholder.svg">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen">
+            <div class="container">
+                <div class="app-header">
+                    <div class="app-icon">📝</div>
+                    <h1>Notion Quick Add</h1>
+                    <p>노션 데이터베이스에 빠르게 페이지를 추가하세요</p>
+                </div>
+                
+                <div class="setup-form">
+                    <div class="form-group">
+                        <label for="api-token">Notion API 토큰</label>
+                        <input type="password" id="api-token" placeholder="secret_...">
+                        <small>노션에서 생성한 Integration 토큰을 입력하세요</small>
+                        <a href="https://www.notion.so/my-integrations" target="_blank" class="help-link">토큰 생성 방법 보기 →</a>
+                    </div>
+                    
+                    <button id="verify-token" class="btn-primary">토큰 확인하기</button>
+                </div>
+                
+                <div id="loading" class="loading hidden">토큰을 확인하는 중...</div>
+                <div id="error-message" class="error hidden"></div>
+            </div>
+        </div>
+        
+        <!-- Database Selection Screen -->
+        <div id="database-screen" class="screen hidden">
+            <div class="container">
+                <div class="screen-header">
+                    <h2>데이터베이스 선택</h2>
+                    <p>단축어를 만들 데이터베이스를 선택하세요</p>
+                </div>
+                <div id="database-list" class="database-list"></div>
+                <button id="add-database-id" class="btn-secondary">데이터베이스 ID로 직접 추가</button>
+            </div>
+        </div>
+        
+        <!-- Shortcut Configuration Screen -->
+        <div id="shortcut-screen" class="screen hidden">
+            <div class="container">
+                <div class="screen-header">
+                    <button id="config-back-btn" class="btn-back">← 뒤로</button>
+                    <h2>단축어 설정</h2>
+                </div>
+                <div id="shortcut-config"></div>
+            </div>
+        </div>
+        
+        <!-- Main Screen -->
+        <div id="main-screen" class="screen hidden">
+            <div class="container">
+                <div class="screen-header">
+                    <h2>내 단축어</h2>
+                    <button id="settings-btn" class="btn-settings">⚙️</button>
+                </div>
+                <div id="shortcuts-list" class="shortcuts-list"></div>
+                <div class="main-actions">
+                    <button id="add-shortcut" class="btn-primary">새 단축어 추가</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input Form Screen -->
+        <div id="form-screen" class="screen hidden">
+            <div class="container">
+                <div id="form-header">
+                    <button id="back-btn" class="btn-back">← 뒤로</button>
+                    <h2 id="form-title">데이터 입력</h2>
+                </div>
+                <form id="data-form" class="data-form"></form>
+            </div>
+        </div>
+        
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen hidden">
+            <div class="container">
+                <div class="screen-header">
+                    <button id="settings-back-btn" class="btn-back">← 뒤로</button>
+                    <h2>설정</h2>
+                </div>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <h3>API 토큰</h3>
+                        <p>현재 설정된 토큰: <span id="token-display">●●●●●●●●</span></p>
+                        <button id="change-token" class="btn-secondary">토큰 변경</button>
+                    </div>
+                    <div class="setting-item">
+                        <h3>데이터 관리</h3>
+                        <button id="clear-shortcuts" class="btn-danger">모든 단축어 삭제</button>
+                        <button id="clear-all-data" class="btn-danger">모든 데이터 삭제</button>
+                    </div>
+                    <div class="setting-item">
+                        <h3>앱 정보</h3>
+                        <p>버전: 1.0.0</p>
+                        <p>GitHub: <a href="https://github.com/1000ssam/notion-quick-add" target="_blank">notion-quick-add</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Screen Management */
+.screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.screen.hidden {
+    display: none;
+}
+
+/* App Header */
+.app-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-top: 2rem;
+}
+
+.app-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+/* Screen Headers */
+.screen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.screen-header h2 {
+    flex: 1;
+    margin: 0;
+}
+
+.screen-header p {
+    width: 100%;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    text-align: left;
+    color: rgba(255,255,255,0.8);
+}
+
+/* Typography */
+h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+p {
+    text-align: center;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 2rem;
+}
+
+small {
+    color: #718096;
+    font-size: 0.875rem;
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.help-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: #3182ce;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.help-link:hover {
+    text-decoration: underline;
+}
+
+/* Form Styles */
+.setup-form,
+.data-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+    transform: translateY(-1px);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Button Styles */
+.btn-primary,
+.btn-secondary,
+.btn-back,
+.btn-settings,
+.btn-danger {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background-color: rgba(255,255,255,0.9);
+    color: #4a5568;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-secondary:hover {
+    background-color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-back {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    padding: 0.5rem 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.btn-back:hover {
+    background-color: rgba(255,255,255,0.3);
+}
+
+.btn-settings {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    padding: 0.5rem;
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-danger {
+    background-color: #e53e3e;
+    color: white;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.btn-danger:hover {
+    background-color: #c53030;
+    transform: translateY(-1px);
+}
+
+/* Database List */
+.database-list {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.database-item {
+    background: rgba(255,255,255,0.95);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    backdrop-filter: blur(10px);
+}
+
+.database-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: #667eea;
+    background: white;
+}
+
+.database-item h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.database-item p {
+    color: #718096;
+    font-size: 0.9rem;
+    text-align: left;
+    margin: 0;
+}
+
+/* Shortcuts List */
+.shortcuts-list {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.shortcut-item {
+    background: rgba(255,255,255,0.95);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.shortcut-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--shortcut-color, #667eea) 0%, rgba(255,255,255,0) 100%);
+}
+
+.shortcut-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    background: white;
+}
+
+.shortcut-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    background: linear-gradient(135deg, var(--shortcut-color, #667eea) 0%, rgba(255,255,255,0.2) 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.shortcut-info {
+    flex: 1;
+}
+
+.shortcut-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.shortcut-info p {
+    color: #718096;
+    font-size: 0.9rem;
+    text-align: left;
+    margin: 0;
+}
+
+/* Main Actions */
+.main-actions {
+    text-align: center;
+}
+
+/* Settings */
+.settings-content {
+    display: grid;
+    gap: 2rem;
+}
+
+.setting-item {
+    background: rgba(255,255,255,0.95);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.setting-item h3 {
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.setting-item p {
+    color: #4a5568;
+    text-align: left;
+    margin-bottom: 0.5rem;
+}
+
+.setting-item a {
+    color: #3182ce;
+    text-decoration: none;
+}
+
+.setting-item a:hover {
+    text-decoration: underline;
+}
+
+/* Loading and Error States */
+.loading {
+    text-align: center;
+    color: rgba(255,255,255,0.8);
+    font-style: italic;
+    background: rgba(255,255,255,0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.error {
+    background: rgba(229, 62, 62, 0.9);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Date Quick Buttons */
+.date-quick-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.date-quick-btn {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.date-quick-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Property Configuration */
+.property-item {
+    background: #f7fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.property-default {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgba(255,255,255,0.7);
+}
+
+.empty-state h3 {
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 1rem;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    .setup-form,
+    .data-form {
+        padding: 1.5rem;
+    }
+    
+    .screen-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .btn-settings {
+        align-self: flex-end;
+        margin-top: -3rem;
+    }
+    
+    .shortcut-item {
+        padding: 1rem;
+    }
+    
+    .shortcut-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .app-header {
+        padding-top: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .app-icon {
+        font-size: 3rem;
+    }
+}
+
+/* PWA Specific Styles */
+@media (display-mode: standalone) {
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .container {
+        padding-top: calc(20px + env(safe-area-inset-top));
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .setup-form,
+    .data-form,
+    .database-item,
+    .shortcut-item,
+    .setting-item {
+        background: rgba(26, 32, 44, 0.95);
+        color: #e2e8f0;
+    }
+    
+    .database-item h3,
+    .shortcut-info h3,
+    .setting-item h3 {
+        color: #e2e8f0;
+    }
+    
+    input,
+    select,
+    textarea {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    input:focus,
+    select:focus,
+    textarea:focus {
+        border-color: #667eea;
+    }
+    
+    .property-item {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+}

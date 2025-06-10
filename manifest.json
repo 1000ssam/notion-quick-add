@@ -1,0 +1,29 @@
+{
+  "name": "Notion Quick Add",
+  "short_name": "NotionQuick",
+  "description": "노션 데이터베이스에 빠르게 페이지를 추가하는 도구",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "orientation": "portrait",
+  "categories": ["productivity", "utilities"],
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icons/icon-placeholder.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "새 단축어 추가",
+      "short_name": "새 단축어",
+      "description": "새로운 노션 단축어를 생성합니다",
+      "url": "/?action=new-shortcut",
+      "icons": [{ "src": "icons/icon-placeholder.svg", "sizes": "any" }]
+    }
+  ]
+}
