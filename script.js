@@ -7,20 +7,12 @@ const AppState = {
     currentShortcut: null
 };
 
-// CORS Proxy Helper - 여러 프록시 서비스를 순차적으로 시도
-const CORS_PROXIES = [
-    'https://api.allorigins.win/raw?url=',
-    'https://cors-anywhere.herokuapp.com/',
-    'https://thingproxy.freeboard.io/fetch/'
-];
-
-let currentProxyIndex = 0;
-
-// Notion API Helper with CORS bypass
+// Notion API Helper with local proxy
 class NotionAPI {
     constructor(token) {
         this.token = token;
-        this.baseURL = 'https://api.notion.com/v1';
+        // 로컬 프록시 서버 사용 (CORS 완전 해결!)
+        this.baseURL = window.location.origin + '/api/notion';
         this.headers = {
             'Authorization': `Bearer ${token}`,
             'Notion-Version': '2022-06-28',
@@ -29,11 +21,10 @@ class NotionAPI {
     }
 
     async request(endpoint, options = {}) {
-        const originalUrl = `${this.baseURL}${endpoint}`;
+        const url = `${this.baseURL}${endpoint}`;
         
-        // 먼저 직접 요청 시도
         try {
-            const response = await fetch(originalUrl, {
+            const response = await fetch(url, {
                 ...options,
                 headers: {
                     ...this.headers,
@@ -48,68 +39,8 @@ class NotionAPI {
 
             return response.json();
         } catch (error) {
-            console.log('Direct request failed, trying CORS proxy...', error.message);
-            
-            // CORS 오류면 프록시 사용
-            if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-                return this.requestWithProxy(originalUrl, options);
-            }
+            console.error('API Error:', error);
             throw error;
-        }
-    }
-
-    async requestWithProxy(originalUrl, options = {}) {
-        for (let i = 0; i < CORS_PROXIES.length; i++) {
-            const proxyIndex = (currentProxyIndex + i) % CORS_PROXIES.length;
-            const proxy = CORS_PROXIES[proxyIndex];
-            
-            try {
-                console.log(`Trying proxy ${proxyIndex + 1}/${CORS_PROXIES.length}: ${proxy}`);
-                
-                let proxyUrl, proxyOptions;
-                
-                if (proxy.includes('allorigins.win')) {
-                    // allorigins.win 방식
-                    proxyUrl = `${proxy}${encodeURIComponent(originalUrl)}`;
-                    proxyOptions = {
-                        method: options.method || 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            ...this.headers,
-                            ...options.headers
-                        },
-                        body: options.body
-                    };
-                } else {
-                    // 일반 프록시 방식
-                    proxyUrl = `${proxy}${originalUrl}`;
-                    proxyOptions = {
-                        ...options,
-                        headers: {
-                            ...this.headers,
-                            ...options.headers,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    };
-                }
-
-                const response = await fetch(proxyUrl, proxyOptions);
-
-                if (!response.ok) {
-                    throw new Error(`Proxy error: HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                currentProxyIndex = proxyIndex; // 성공한 프록시 기억
-                return data;
-                
-            } catch (error) {
-                console.log(`Proxy ${proxyIndex + 1} failed:`, error.message);
-                
-                if (i === CORS_PROXIES.length - 1) {
-                    throw new Error(`모든 프록시 서버에서 요청이 실패했습니다. 네트워크 연결을 확인해주세요.`);
-                }
-            }
         }
     }
 
@@ -403,7 +334,6 @@ async function handleTokenVerification() {
         return;
     }
 
-    // Check token format - support both old and new formats
     if (!token.startsWith('secret_') && !token.startsWith('ntn_')) {
         showError('올바른 Notion API 토큰 형식이 아닙니다. secret_ 또는 ntn_으로 시작해야 합니다.');
         return;
@@ -415,12 +345,10 @@ async function handleTokenVerification() {
     try {
         const api = new NotionAPI(token);
         
-        // Test the token with a simple request first
         console.log('Testing token...');
         await api.request('/users/me');
         console.log('Token is valid, searching for databases...');
         
-        // If that works, search for databases
         const result = await api.searchDatabases();
         
         AppState.apiToken = token;
@@ -438,8 +366,6 @@ async function handleTokenVerification() {
             showError('토큰이 유효하지 않습니다. Notion에서 새로 생성한 Integration 토큰인지 확인해주세요.');
         } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
             showError('토큰 권한이 부족합니다. Integration이 워크스페이스에 연결되어 있는지 확인해주세요.');
-        } else if (error.message.includes('프록시 서버')) {
-            showError('네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
         } else {
             showError(`토큰 확인 실패: ${error.message}`);
         }
