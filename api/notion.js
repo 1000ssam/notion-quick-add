@@ -1,4 +1,4 @@
-export default function handler(req, res) {
+export default async function handler(req, res) {
   // CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -9,10 +9,15 @@ export default function handler(req, res) {
     return;
   }
   
-  // Notion API 프록시
-  const notionUrl = `https://api.notion.com/v1${req.url.replace('/api/notion', '')}`;
-  
-  const proxyRequest = async () => {
+  try {
+    // URL에서 Notion API 경로 추출
+    const notionPath = req.url.replace('/api/notion', '');
+    const notionUrl = `https://api.notion.com/v1${notionPath}`;
+    
+    console.log('Proxying to:', notionUrl);
+    console.log('Method:', req.method);
+    console.log('Headers:', req.headers);
+    
     const response = await fetch(notionUrl, {
       method: req.method,
       headers: {
@@ -24,10 +29,14 @@ export default function handler(req, res) {
     });
     
     const data = await response.json();
+    
+    console.log('Notion response status:', response.status);
+    console.log('Notion response:', data);
+    
     res.status(response.status).json(data);
-  };
-  
-  proxyRequest().catch(err => {
-    res.status(500).json({ error: err.message });
-  });
+    
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ error: error.message });
+  }
 }
