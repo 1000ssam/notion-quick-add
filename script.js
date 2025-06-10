@@ -30,7 +30,7 @@ class NotionAPI {
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
             throw new Error(error.message || `HTTP ${response.status}`);
         }
 
@@ -327,11 +327,24 @@ async function handleTokenVerification() {
         return;
     }
 
+    // Check token format - support both old and new formats
+    if (!token.startsWith('secret_') && !token.startsWith('ntn_')) {
+        showError('올바른 Notion API 토큰 형식이 아닙니다. secret_ 또는 ntn_으로 시작해야 합니다.');
+        return;
+    }
+
     hideError();
     showLoading(true);
 
     try {
         const api = new NotionAPI(token);
+        
+        // Test the token with a simple request first
+        console.log('Testing token...');
+        await api.request('/users/me');
+        console.log('Token is valid, searching for databases...');
+        
+        // If that works, search for databases
         const result = await api.searchDatabases();
         
         AppState.apiToken = token;
@@ -343,7 +356,17 @@ async function handleTokenVerification() {
         showScreen('database-screen');
     } catch (error) {
         showLoading(false);
-        showError(`토큰 확인 실패: ${error.message}`);
+        console.error('Token verification error:', error);
+        
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            showError('토큰이 유효하지 않습니다. Notion에서 새로 생성한 Integration 토큰인지 확인해주세요.');
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+            showError('토큰 권한이 부족합니다. Integration이 워크스페이스에 연결되어 있는지 확인해주세요.');
+        } else if (error.message.includes('CORS')) {
+            showError('브라우저 CORS 정책 때문에 요청이 차단되었습니다. 다른 브라우저를 시도해보세요.');
+        } else {
+            showError(`토큰 확인 실패: ${error.message}`);
+        }
     }
 }
 
@@ -356,6 +379,13 @@ function renderDatabaseList() {
             <div class="empty-state">
                 <h3>데이터베이스를 찾을 수 없습니다</h3>
                 <p>Integration을 데이터베이스에 연결했는지 확인해주세요.</p>
+                <p><strong>확인 방법:</strong></p>
+                <ol style="text-align: left; margin-top: 1rem;">
+                    <li>Notion에서 데이터베이스 페이지 열기</li>
+                    <li>페이지 우상단 ⋯ 클릭</li>
+                    <li>"연결 추가" 선택</li>
+                    <li>생성한 Integration 선택</li>
+                </ol>
             </div>
         `;
         return;
