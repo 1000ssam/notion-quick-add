@@ -1,0 +1,15 @@
+[build]
+  publish = "."
+  
+[[redirects]]
+  from = "/api/*"
+  to = "https://api.notion.com/v1/:splat"
+  status = 200
+  headers = {Access-Control-Allow-Origin = "*"}
+  
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "*"
+    Access-Control-Allow-Methods = "*"
