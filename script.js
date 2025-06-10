@@ -135,19 +135,20 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
             defaultOption.textContent = '선택하세요';
             input.appendChild(defaultOption);
             
-            propConfig.select.options.forEach(option => {
-                const optionEl = document.createElement('option');
-                optionEl.value = option.name;
-                optionEl.textContent = option.name;
-                if (defaultValue === option.name) {
-                    optionEl.selected = true;
-                }
-                input.appendChild(optionEl);
-            });
+            if (propConfig.select && propConfig.select.options) {
+                propConfig.select.options.forEach(option => {
+                    const optionEl = document.createElement('option');
+                    optionEl.value = option.name;
+                    optionEl.textContent = option.name;
+                    if (defaultValue === option.name) {
+                        optionEl.selected = true;
+                    }
+                    input.appendChild(optionEl);
+                });
+            }
             break;
 
         case 'multi_select':
-            // For simplicity, we'll use a text input with comma-separated values
             input = document.createElement('input');
             input.type = 'text';
             input.placeholder = '쉼표로 구분하여 입력 (예: 태그1, 태그2)';
@@ -195,7 +196,6 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
             
             dateContainer.appendChild(quickButtons);
             formGroup.appendChild(dateContainer);
-            formGroup.appendChild(document.createElement('br'));
             return formGroup;
 
         case 'checkbox':
@@ -351,12 +351,22 @@ function renderDatabaseList() {
     const listEl = document.getElementById('database-list');
     listEl.innerHTML = '';
 
+    if (AppState.databases.length === 0) {
+        listEl.innerHTML = `
+            <div class="empty-state">
+                <h3>데이터베이스를 찾을 수 없습니다</h3>
+                <p>Integration을 데이터베이스에 연결했는지 확인해주세요.</p>
+            </div>
+        `;
+        return;
+    }
+
     AppState.databases.forEach(db => {
         const item = document.createElement('div');
         item.className = 'database-item';
         item.innerHTML = `
             <h3>${db.title?.[0]?.text?.content || '제목 없음'}</h3>
-            <p>ID: ${db.id}</p>
+            <p>속성 ${Object.keys(db.properties || {}).length}개</p>
         `;
         item.onclick = () => selectDatabase(db);
         listEl.appendChild(item);
@@ -395,7 +405,6 @@ function renderShortcutConfig(database) {
             </div>
             
             <div class="form-group">
-                <label>페이지 콘텐츠</label>
                 <label>
                     <input type="checkbox" id="include-content"> 페이지 본문 입력 포함
                 </label>
@@ -409,12 +418,13 @@ function renderShortcutConfig(database) {
     
     Object.entries(properties).forEach(([propName, propConfig]) => {
         const div = document.createElement('div');
+        div.className = 'property-item';
         div.innerHTML = `
             <label>
                 <input type="checkbox" name="property" value="${propName}" data-type="${propConfig.type}">
                 ${propName} (${propConfig.type})
             </label>
-            <div class="property-default" style="margin-left: 20px; display: none;">
+            <div class="property-default" style="display: none;">
                 <label for="default-${propName}">기본값:</label>
                 <div id="default-input-${propName}"></div>
             </div>
@@ -429,7 +439,10 @@ function renderShortcutConfig(database) {
                 defaultDiv.style.display = 'block';
                 const defaultInput = createPropertyInput(`default-${propName}`, propConfig);
                 defaultContainer.innerHTML = '';
-                defaultContainer.appendChild(defaultInput.querySelector('input, select, textarea'));
+                const inputElement = defaultInput.querySelector('input, select, textarea');
+                if (inputElement) {
+                    defaultContainer.appendChild(inputElement);
+                }
             } else {
                 defaultDiv.style.display = 'none';
             }
@@ -465,7 +478,7 @@ function createShortcut(database) {
         properties: {},
         includeContent,
         icon: '📝',
-        color: '#3182ce'
+        color: '#667eea'
     };
     
     selectedProperties.forEach(propName => {
@@ -490,16 +503,27 @@ function renderShortcutsList() {
     const listEl = document.getElementById('shortcuts-list');
     listEl.innerHTML = '';
 
+    if (AppState.shortcuts.length === 0) {
+        listEl.innerHTML = `
+            <div class="empty-state">
+                <h3>아직 단축어가 없습니다</h3>
+                <p>첫 번째 단축어를 만들어보세요!</p>
+            </div>
+        `;
+        return;
+    }
+
     AppState.shortcuts.forEach(shortcut => {
         const item = document.createElement('div');
         item.className = 'shortcut-item';
+        item.style.setProperty('--shortcut-color', shortcut.color);
         item.innerHTML = `
             <div class="shortcut-icon" style="background-color: ${shortcut.color}">
                 ${shortcut.icon}
             </div>
             <div class="shortcut-info">
                 <h3>${shortcut.name}</h3>
-                <p>${shortcut.databaseName}</p>
+                <p>${shortcut.databaseName} • ${Object.keys(shortcut.properties).length}개 속성</p>
             </div>
         `;
         item.onclick = () => openShortcut(shortcut);
@@ -595,12 +619,59 @@ async function handleFormSubmit(shortcut) {
         showLoading(false);
         
         // Show success message and go back
-        alert('노션에 성공적으로 추가되었습니다!');
-        showScreen('main-screen');
+        const successMsg = document.createElement('div');
+        successMsg.className = 'success-message';
+        successMsg.innerHTML = `
+            <div style="background: rgba(72, 187, 120, 0.9); color: white; padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+                ✅ 노션에 성공적으로 추가되었습니다!
+            </div>
+        `;
+        formEl.insertBefore(successMsg, formEl.firstChild);
+        
+        setTimeout(() => {
+            showScreen('main-screen');
+        }, 1500);
         
     } catch (error) {
         showLoading(false);
         showError(`페이지 생성 실패: ${error.message}`);
+    }
+}
+
+// Settings Functions
+function renderSettings() {
+    const tokenDisplay = document.getElementById('token-display');
+    if (AppState.apiToken) {
+        tokenDisplay.textContent = '●●●●●●●●' + AppState.apiToken.slice(-4);
+    }
+}
+
+function handleChangeToken() {
+    if (confirm('토큰을 변경하면 모든 데이터가 초기화됩니다. 계속하시겠습니까?')) {
+        localStorage.clear();
+        AppState.apiToken = '';
+        AppState.databases = [];
+        AppState.shortcuts = [];
+        showScreen('setup-screen');
+    }
+}
+
+function handleClearShortcuts() {
+    if (confirm('모든 단축어를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        AppState.shortcuts = [];
+        saveToStorage();
+        renderShortcutsList();
+        showScreen('main-screen');
+    }
+}
+
+function handleClearAllData() {
+    if (confirm('모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        localStorage.clear();
+        AppState.apiToken = '';
+        AppState.databases = [];
+        AppState.shortcuts = [];
+        showScreen('setup-screen');
     }
 }
 
@@ -611,9 +682,12 @@ function initApp() {
         if (AppState.shortcuts.length > 0) {
             renderShortcutsList();
             showScreen('main-screen');
-        } else {
+        } else if (AppState.databases.length > 0) {
             renderDatabaseList();
             showScreen('database-screen');
+        } else {
+            // Token exists but no databases, try to fetch them
+            handleTokenVerification();
         }
     } else {
         showScreen('setup-screen');
@@ -622,18 +696,36 @@ function initApp() {
     // Set up event listeners
     document.getElementById('verify-token').onclick = handleTokenVerification;
     document.getElementById('back-btn').onclick = () => showScreen('main-screen');
+    document.getElementById('config-back-btn').onclick = () => showScreen('database-screen');
     document.getElementById('add-shortcut').onclick = () => {
         renderDatabaseList();
         showScreen('database-screen');
     };
     
+    // Settings
+    document.getElementById('settings-btn').onclick = () => {
+        renderSettings();
+        showScreen('settings-screen');
+    };
+    document.getElementById('settings-back-btn').onclick = () => showScreen('main-screen');
+    document.getElementById('change-token').onclick = handleChangeToken;
+    document.getElementById('clear-shortcuts').onclick = handleClearShortcuts;
+    document.getElementById('clear-all-data').onclick = handleClearAllData;
+    
     // Handle URL parameters for shortcuts
     const urlParams = new URLSearchParams(window.location.search);
     const shortcutId = urlParams.get('shortcut');
+    const action = urlParams.get('action');
+    
     if (shortcutId) {
         const shortcut = AppState.shortcuts.find(s => s.id === shortcutId);
         if (shortcut) {
             openShortcut(shortcut);
+        }
+    } else if (action === 'new-shortcut') {
+        if (AppState.apiToken) {
+            renderDatabaseList();
+            showScreen('database-screen');
         }
     }
 }
