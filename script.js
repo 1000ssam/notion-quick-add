@@ -108,7 +108,30 @@ function saveToStorage() {
     localStorage.setItem('notion-shortcuts', JSON.stringify(AppState.shortcuts));
 }
 
-// Property Type Helpers
+// 📅 상대적 날짜 계산 함수 추가
+function getRelativeDate(type) {
+    const date = new Date();
+    switch (type) {
+        case 'today':
+            return date.toISOString().split('T')[0];
+        case 'tomorrow':
+            date.setDate(date.getDate() + 1);
+            return date.toISOString().split('T')[0];
+        case 'day-after-tomorrow':
+            date.setDate(date.getDate() + 2);
+            return date.toISOString().split('T')[0];
+        case 'next-week':
+            date.setDate(date.getDate() + 7);
+            return date.toISOString().split('T')[0];
+        case 'next-month':
+            date.setMonth(date.getMonth() + 1);
+            return date.toISOString().split('T')[0];
+        default:
+            return date.toISOString().split('T')[0];
+    }
+}
+
+// Property Type Helpers - 개선된 날짜 입력
 function createPropertyInput(propName, propConfig, defaultValue = null) {
     const { type } = propConfig;
     const formGroup = document.createElement('div');
@@ -164,20 +187,15 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
 
         case 'date':
             const dateContainer = document.createElement('div');
+            dateContainer.className = 'date-container';
+            
             input = document.createElement('input');
             input.type = 'date';
             
+            // 🔥 개선된 기본값 처리
             if (defaultValue) {
-                if (defaultValue === 'today') {
-                    input.value = new Date().toISOString().split('T')[0];
-                } else if (defaultValue === 'tomorrow') {
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    input.value = tomorrow.toISOString().split('T')[0];
-                } else if (defaultValue === 'day-after-tomorrow') {
-                    const dayAfter = new Date();
-                    dayAfter.setDate(dayAfter.getDate() + 2);
-                    input.value = dayAfter.toISOString().split('T')[0];
+                if (['today', 'tomorrow', 'day-after-tomorrow', 'next-week', 'next-month'].includes(defaultValue)) {
+                    input.value = getRelativeDate(defaultValue);
                 } else {
                     input.value = defaultValue;
                 }
@@ -185,19 +203,54 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
             
             dateContainer.appendChild(input);
             
+            // 🎯 더 많은 상대적 날짜 버튼 추가
             const quickButtons = document.createElement('div');
             quickButtons.className = 'date-quick-buttons';
+            quickButtons.style.cssText = `
+                display: flex;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+                flex-wrap: wrap;
+            `;
             
-            ['오늘', '내일', '모레'].forEach((text, index) => {
+            const dateOptions = [
+                { text: '오늘', type: 'today' },
+                { text: '내일', type: 'tomorrow' },
+                { text: '모레', type: 'day-after-tomorrow' },
+                { text: '1주일 후', type: 'next-week' },
+                { text: '1달 후', type: 'next-month' }
+            ];
+            
+            dateOptions.forEach(option => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'date-quick-btn';
-                btn.textContent = text;
-                btn.onclick = () => {
-                    const date = new Date();
-                    date.setDate(date.getDate() + index);
-                    input.value = date.toISOString().split('T')[0];
-                };
+                btn.textContent = option.text;
+                btn.style.cssText = `
+                    padding: 0.25rem 0.5rem;
+                    font-size: 0.8rem;
+                    border: 1px solid #ddd;
+                    background: #f8f9fa;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    color: #495057;
+                `;
+                
+                // 🔧 iOS 호환성을 위한 이벤트 리스너 개선
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    input.value = getRelativeDate(option.type);
+                });
+                
+                // hover 효과
+                btn.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#e9ecef';
+                });
+                btn.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                
                 quickButtons.appendChild(btn);
             });
             
@@ -245,7 +298,7 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
 
 function getPropertyValue(propName, propConfig, formData) {
     const { type } = propConfig;
-    const value = formData.get(propName);
+    const value = formData.get ? formData.get(propName) : formData[propName];
 
     if (!value && type !== 'checkbox') return null;
 
@@ -295,7 +348,7 @@ function getPropertyValue(propName, propConfig, formData) {
 
         case 'checkbox':
             return {
-                checkbox: formData.has(propName)
+                checkbox: formData.hasOwnProperty ? formData.hasOwnProperty(propName) : formData.has(propName)
             };
 
         case 'url':
@@ -442,7 +495,8 @@ function renderShortcutConfig(database) {
                 </label>
             </div>
             
-            <button type="submit" class="btn-primary">단축어 생성</button>
+            <!-- 🔧 iOS 호환성을 위한 버튼 타입 명시 -->
+            <button type="button" id="create-shortcut-btn" class="btn-primary">단축어 생성</button>
         </form>
     `;
     
@@ -466,69 +520,162 @@ function renderShortcutConfig(database) {
         const defaultDiv = div.querySelector('.property-default');
         const defaultContainer = div.querySelector(`#default-input-${propName}`);
         
-        checkbox.onchange = () => {
-            if (checkbox.checked) {
+        // 🔧 iOS 호환성을 위한 이벤트 리스너 개선
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
                 defaultDiv.style.display = 'block';
                 const defaultInput = createPropertyInput(`default-${propName}`, propConfig);
                 defaultContainer.innerHTML = '';
+                
+                // 🎯 날짜 타입의 경우 기본값 선택 드롭다운 추가
+                if (propConfig.type === 'date') {
+                    const selectWrapper = document.createElement('div');
+                    selectWrapper.style.marginBottom = '0.5rem';
+                    
+                    const select = document.createElement('select');
+                    select.style.cssText = 'width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;';
+                    
+                    const options = [
+                        { value: '', text: '직접 입력' },
+                        { value: 'today', text: '오늘' },
+                        { value: 'tomorrow', text: '내일' },
+                        { value: 'day-after-tomorrow', text: '모레' },
+                        { value: 'next-week', text: '1주일 후' },
+                        { value: 'next-month', text: '1달 후' }
+                    ];
+                    
+                    options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.text;
+                        select.appendChild(option);
+                    });
+                    
+                    const dateInput = defaultInput.querySelector('input[type="date"]');
+                    
+                    select.addEventListener('change', function() {
+                        if (this.value) {
+                            dateInput.value = getRelativeDate(this.value);
+                        }
+                    });
+                    
+                    selectWrapper.appendChild(select);
+                    defaultContainer.appendChild(selectWrapper);
+                }
+                
                 const inputElement = defaultInput.querySelector('input, select, textarea');
                 if (inputElement) {
-                    defaultContainer.appendChild(inputElement);
+                    defaultContainer.appendChild(inputElement.parentNode || inputElement);
                 }
             } else {
                 defaultDiv.style.display = 'none';
             }
-        };
+        });
         
         propertiesList.appendChild(div);
     });
     
-    document.getElementById('shortcut-form').onsubmit = (e) => {
+    // 🔧 iOS Safari 전용 이벤트 핸들링
+    const createBtn = document.getElementById('create-shortcut-btn');
+    
+    // 여러 이벤트 방식 동시 적용 (iOS Safari 호환성 극대화)
+    function handleCreateShortcut(e) {
         e.preventDefault();
-        createShortcut(database);
-    };
-}
-
-function createShortcut(database) {
-    const form = document.getElementById('shortcut-form');
-    const formData = new FormData(form);
-    
-    const shortcutName = formData.get('shortcut-name');
-    const selectedProperties = formData.getAll('property');
-    const includeContent = formData.has('include-content');
-    
-    if (!shortcutName || selectedProperties.length === 0) {
-        showError('단축어 이름과 최소 하나의 속성을 선택해주세요.');
-        return;
+        e.stopPropagation();
+        
+        console.log('🔥 버튼 클릭됨!'); // 디버그 로그
+        
+        // 폼 데이터 직접 수집 (FormData 대신)
+        const shortcutName = document.getElementById('shortcut-name').value.trim();
+        const checkboxes = document.querySelectorAll('input[name="property"]:checked');
+        const selectedProperties = Array.from(checkboxes).map(cb => cb.value);
+        const includeContent = document.getElementById('include-content').checked;
+        
+        console.log('📝 수집된 데이터:', { shortcutName, selectedProperties, includeContent });
+        
+        if (!shortcutName || selectedProperties.length === 0) {
+            alert('단축어 이름과 최소 하나의 속성을 선택해주세요.');
+            return;
+        }
+        
+        createShortcutDirectly(database, shortcutName, selectedProperties, includeContent);
     }
     
-    const shortcut = {
-        id: Date.now().toString(),
-        name: shortcutName,
-        databaseId: database.id,
-        databaseName: database.title?.[0]?.text?.content || '제목 없음',
-        properties: {},
-        includeContent,
-        icon: '📝',
-        color: '#667eea'
-    };
+    // iOS Safari 호환성을 위한 다중 이벤트 등록
+    createBtn.addEventListener('click', handleCreateShortcut);
+    createBtn.addEventListener('touchend', handleCreateShortcut);
     
-    selectedProperties.forEach(propName => {
-        const propConfig = database.properties[propName];
-        const defaultInput = document.querySelector(`#default-input-${propName} input, #default-input-${propName} select`);
-        
-        shortcut.properties[propName] = {
-            type: propConfig.type,
-            config: propConfig,
-            defaultValue: defaultInput ? defaultInput.value : null
-        };
+    // 추가: Enter 키 지원
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && document.activeElement.closest('#shortcut-form')) {
+            e.preventDefault();
+            handleCreateShortcut(e);
+        }
     });
+}
+
+// 🔧 단순화된 단축어 생성 함수
+function createShortcutDirectly(database, shortcutName, selectedProperties, includeContent) {
+    console.log('🚀 createShortcutDirectly 호출됨');
     
-    AppState.shortcuts.push(shortcut);
-    saveToStorage();
-    
-    renderShortcutsList();
-    showScreen('main-screen');
+    try {
+        const shortcut = {
+            id: Date.now().toString(),
+            name: shortcutName,
+            databaseId: database.id,
+            databaseName: database.title?.[0]?.text?.content || '제목 없음',
+            properties: {},
+            includeContent,
+            icon: '📝',
+            color: '#667eea'
+        };
+        
+        selectedProperties.forEach(propName => {
+            const propConfig = database.properties[propName];
+            const defaultInput = document.querySelector(`#default-input-${propName} input, #default-input-${propName} select`);
+            
+            shortcut.properties[propName] = {
+                type: propConfig.type,
+                config: propConfig,
+                defaultValue: defaultInput ? defaultInput.value : null
+            };
+        });
+        
+        AppState.shortcuts.push(shortcut);
+        saveToStorage();
+        
+        console.log('✅ 단축어 저장 완료:', shortcut);
+        
+        // 🎉 성공 메시지 표시
+        const successMsg = document.createElement('div');
+        successMsg.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28a745;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            z-index: 1000;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        `;
+        successMsg.textContent = '✅ 단축어가 생성되었습니다!';
+        document.body.appendChild(successMsg);
+        
+        setTimeout(() => {
+            if (document.body.contains(successMsg)) {
+                document.body.removeChild(successMsg);
+            }
+            renderShortcutsList();
+            showScreen('main-screen');
+        }, 1500);
+        
+    } catch (error) {
+        console.error('❌ 단축어 생성 실패:', error);
+        alert(`단축어 생성 실패: ${error.message}`);
+    }
 }
 
 function renderShortcutsList() {
@@ -593,28 +740,52 @@ function renderDataForm(shortcut) {
         formEl.appendChild(contentGroup);
     }
     
-    // Add submit button
+    // Add submit button - iOS 호환성 개선
     const submitBtn = document.createElement('button');
-    submitBtn.type = 'submit';
+    submitBtn.type = 'button'; // submit 대신 button 사용
+    submitBtn.id = 'submit-data-btn';
     submitBtn.className = 'btn-primary';
     submitBtn.textContent = '노션에 추가';
     formEl.appendChild(submitBtn);
     
-    formEl.onsubmit = (e) => {
+    // 🔧 iOS 호환성을 위한 이벤트 핸들링
+    function handleDataSubmit(e) {
         e.preventDefault();
-        handleFormSubmit(shortcut);
-    };
+        e.stopPropagation();
+        handleFormSubmitDirectly(shortcut);
+    }
+    
+    submitBtn.addEventListener('click', handleDataSubmit);
+    submitBtn.addEventListener('touchend', handleDataSubmit);
 }
 
-async function handleFormSubmit(shortcut) {
-    const formEl = document.getElementById('data-form');
-    const formData = new FormData(formEl);
-    
+async function handleFormSubmitDirectly(shortcut) {
     showLoading(true);
     hideError();
     
     try {
         const api = new NotionAPI(AppState.apiToken);
+        
+        // 직접 데이터 수집 (FormData 대신)
+        const formData = {};
+        
+        Object.keys(shortcut.properties).forEach(propName => {
+            const input = document.querySelector(`#prop-${propName}`);
+            if (input) {
+                if (input.type === 'checkbox') {
+                    formData[propName] = input.checked;
+                } else {
+                    formData[propName] = input.value;
+                }
+            }
+        });
+        
+        if (shortcut.includeContent) {
+            const contentInput = document.getElementById('page-content');
+            if (contentInput) {
+                formData['page-content'] = contentInput.value;
+            }
+        }
         
         // Build properties object
         const properties = {};
@@ -627,22 +798,19 @@ async function handleFormSubmit(shortcut) {
         
         // Build children (page content)
         const children = [];
-        if (shortcut.includeContent) {
-            const content = formData.get('page-content');
-            if (content) {
-                children.push({
-                    object: 'block',
-                    type: 'paragraph',
-                    paragraph: {
-                        rich_text: [{
-                            type: 'text',
-                            text: {
-                                content: content
-                            }
-                        }]
-                    }
-                });
-            }
+        if (shortcut.includeContent && formData['page-content']) {
+            children.push({
+                object: 'block',
+                type: 'paragraph',
+                paragraph: {
+                    rich_text: [{
+                        type: 'text',
+                        text: {
+                            content: formData['page-content']
+                        }
+                    }]
+                }
+            });
         }
         
         // Create page
@@ -725,24 +893,24 @@ function initApp() {
         showScreen('setup-screen');
     }
     
-    // Set up event listeners
-    document.getElementById('verify-token').onclick = handleTokenVerification;
-    document.getElementById('back-btn').onclick = () => showScreen('main-screen');
-    document.getElementById('config-back-btn').onclick = () => showScreen('database-screen');
-    document.getElementById('add-shortcut').onclick = () => {
+    // 🔧 iOS 호환성을 위한 이벤트 리스너 개선
+    document.getElementById('verify-token').addEventListener('click', handleTokenVerification);
+    document.getElementById('back-btn').addEventListener('click', () => showScreen('main-screen'));
+    document.getElementById('config-back-btn').addEventListener('click', () => showScreen('database-screen'));
+    document.getElementById('add-shortcut').addEventListener('click', () => {
         renderDatabaseList();
         showScreen('database-screen');
-    };
+    });
     
     // Settings
-    document.getElementById('settings-btn').onclick = () => {
+    document.getElementById('settings-btn').addEventListener('click', () => {
         renderSettings();
         showScreen('settings-screen');
-    };
-    document.getElementById('settings-back-btn').onclick = () => showScreen('main-screen');
-    document.getElementById('change-token').onclick = handleChangeToken;
-    document.getElementById('clear-shortcuts').onclick = handleClearShortcuts;
-    document.getElementById('clear-all-data').onclick = handleClearAllData;
+    });
+    document.getElementById('settings-back-btn').addEventListener('click', () => showScreen('main-screen'));
+    document.getElementById('change-token').addEventListener('click', handleChangeToken);
+    document.getElementById('clear-shortcuts').addEventListener('click', handleClearShortcuts);
+    document.getElementById('clear-all-data').addEventListener('click', handleClearAllData);
     
     // Handle URL parameters for shortcuts
     const urlParams = new URLSearchParams(window.location.search);
