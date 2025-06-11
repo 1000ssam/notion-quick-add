@@ -192,10 +192,12 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
             input = document.createElement('input');
             input.type = 'date';
             
-            // 🔥 개선된 기본값 처리
+            // 🔥 개선된 기본값 처리 - 수정됨!
             if (defaultValue) {
                 if (['today', 'tomorrow', 'day-after-tomorrow', 'next-week', 'next-month'].includes(defaultValue)) {
                     input.value = getRelativeDate(defaultValue);
+                } else if (defaultValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    input.value = defaultValue;
                 } else {
                     input.value = defaultValue;
                 }
@@ -261,7 +263,7 @@ function createPropertyInput(propName, propConfig, defaultValue = null) {
         case 'checkbox':
             input = document.createElement('input');
             input.type = 'checkbox';
-            input.checked = defaultValue === true;
+            input.checked = defaultValue === true || defaultValue === 'true';
             break;
 
         case 'url':
@@ -524,8 +526,6 @@ function renderShortcutConfig(database) {
         checkbox.addEventListener('change', function() {
             if (this.checked) {
                 defaultDiv.style.display = 'block';
-                const defaultInput = createPropertyInput(`default-${propName}`, propConfig);
-                defaultContainer.innerHTML = '';
                 
                 // 🎯 날짜 타입의 경우 기본값 선택 드롭다운 추가
                 if (propConfig.type === 'date') {
@@ -533,6 +533,7 @@ function renderShortcutConfig(database) {
                     selectWrapper.style.marginBottom = '0.5rem';
                     
                     const select = document.createElement('select');
+                    select.id = `default-type-${propName}`;
                     select.style.cssText = 'width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;';
                     
                     const options = [
@@ -551,24 +552,33 @@ function renderShortcutConfig(database) {
                         select.appendChild(option);
                     });
                     
-                    const dateInput = defaultInput.querySelector('input[type="date"]');
+                    selectWrapper.appendChild(select);
+                    defaultContainer.appendChild(selectWrapper);
+                    
+                    // 날짜 입력 필드 추가
+                    const dateInput = document.createElement('input');
+                    dateInput.type = 'date';
+                    dateInput.id = `default-${propName}`;
+                    dateInput.name = `default-${propName}`;
+                    dateInput.style.cssText = 'width: 100%; padding: 0.5rem;';
+                    defaultContainer.appendChild(dateInput);
                     
                     select.addEventListener('change', function() {
                         if (this.value) {
                             dateInput.value = getRelativeDate(this.value);
                         }
                     });
-                    
-                    selectWrapper.appendChild(select);
-                    defaultContainer.appendChild(selectWrapper);
-                }
-                
-                const inputElement = defaultInput.querySelector('input, select, textarea');
-                if (inputElement) {
-                    defaultContainer.appendChild(inputElement.parentNode || inputElement);
+                } else {
+                    // 다른 타입들은 기존 방식 사용
+                    const defaultInput = createPropertyInput(`default-${propName}`, propConfig);
+                    const inputElement = defaultInput.querySelector('input, select, textarea');
+                    if (inputElement) {
+                        defaultContainer.appendChild(inputElement);
+                    }
                 }
             } else {
                 defaultDiv.style.display = 'none';
+                defaultContainer.innerHTML = '';
             }
         });
         
@@ -614,7 +624,7 @@ function renderShortcutConfig(database) {
     });
 }
 
-// 🔧 단순화된 단축어 생성 함수
+// 🔧 단순화된 단축어 생성 함수 - 기본값 처리 개선
 function createShortcutDirectly(database, shortcutName, selectedProperties, includeContent) {
     console.log('🚀 createShortcutDirectly 호출됨');
     
@@ -632,12 +642,33 @@ function createShortcutDirectly(database, shortcutName, selectedProperties, incl
         
         selectedProperties.forEach(propName => {
             const propConfig = database.properties[propName];
-            const defaultInput = document.querySelector(`#default-input-${propName} input, #default-input-${propName} select`);
+            let defaultValue = null;
+            
+            // 🔥 기본값 처리 개선 - 날짜 타입 특별 처리
+            if (propConfig.type === 'date') {
+                const typeSelect = document.querySelector(`#default-type-${propName}`);
+                const dateInput = document.querySelector(`#default-${propName}`);
+                
+                if (typeSelect && typeSelect.value) {
+                    defaultValue = typeSelect.value; // 'today', 'tomorrow' 등 저장
+                } else if (dateInput && dateInput.value) {
+                    defaultValue = dateInput.value; // 실제 날짜 값 저장
+                }
+            } else {
+                const defaultInput = document.querySelector(`#default-${propName}`);
+                if (defaultInput) {
+                    if (defaultInput.type === 'checkbox') {
+                        defaultValue = defaultInput.checked;
+                    } else {
+                        defaultValue = defaultInput.value;
+                    }
+                }
+            }
             
             shortcut.properties[propName] = {
                 type: propConfig.type,
                 config: propConfig,
-                defaultValue: defaultInput ? defaultInput.value : null
+                defaultValue: defaultValue
             };
         });
         
@@ -646,7 +677,9 @@ function createShortcutDirectly(database, shortcutName, selectedProperties, incl
         
         console.log('✅ 단축어 저장 완료:', shortcut);
         
-        // 🎉 성공 메시지 표시
+        // 🎉 URL 생성 및 표시
+        const shortcutUrl = `${window.location.origin}${window.location.pathname}?shortcut=${shortcut.id}`;
+        
         const successMsg = document.createElement('div');
         successMsg.style.cssText = `
             position: fixed;
@@ -660,8 +693,18 @@ function createShortcutDirectly(database, shortcutName, selectedProperties, incl
             z-index: 1000;
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            max-width: 90%;
+            text-align: center;
         `;
-        successMsg.textContent = '✅ 단축어가 생성되었습니다!';
+        successMsg.innerHTML = `
+            ✅ 단축어가 생성되었습니다!<br>
+            <small style="display: block; margin-top: 0.5rem; font-weight: normal;">
+                이 URL을 홈 화면에 추가하세요:<br>
+                <code style="background: rgba(255,255,255,0.2); padding: 0.2rem; border-radius: 4px; font-size: 0.8rem;">
+                    ${shortcutUrl}
+                </code>
+            </small>
+        `;
         document.body.appendChild(successMsg);
         
         setTimeout(() => {
@@ -670,7 +713,7 @@ function createShortcutDirectly(database, shortcutName, selectedProperties, incl
             }
             renderShortcutsList();
             showScreen('main-screen');
-        }, 1500);
+        }, 4000);
         
     } catch (error) {
         console.error('❌ 단축어 생성 실패:', error);
@@ -696,6 +739,10 @@ function renderShortcutsList() {
         const item = document.createElement('div');
         item.className = 'shortcut-item';
         item.style.setProperty('--shortcut-color', shortcut.color);
+        
+        // 🔥 단축어 URL 생성
+        const shortcutUrl = `${window.location.origin}${window.location.pathname}?shortcut=${shortcut.id}`;
+        
         item.innerHTML = `
             <div class="shortcut-icon" style="background-color: ${shortcut.color}">
                 ${shortcut.icon}
@@ -703,17 +750,132 @@ function renderShortcutsList() {
             <div class="shortcut-info">
                 <h3>${shortcut.name}</h3>
                 <p>${shortcut.databaseName} • ${Object.keys(shortcut.properties).length}개 속성</p>
+                <div class="shortcut-actions" style="margin-top: 0.5rem;">
+                    <button class="action-btn test-btn" onclick="openShortcut('${shortcut.id}')">테스트</button>
+                    <button class="action-btn url-btn" onclick="copyShortcutUrl('${shortcut.id}')">URL 복사</button>
+                    <button class="action-btn edit-btn" onclick="editShortcut('${shortcut.id}')">수정</button>
+                    <button class="action-btn delete-btn" onclick="deleteShortcut('${shortcut.id}')">삭제</button>
+                </div>
             </div>
         `;
-        item.onclick = () => openShortcut(shortcut);
         listEl.appendChild(item);
     });
 }
 
-function openShortcut(shortcut) {
-    AppState.currentShortcut = shortcut;
-    renderDataForm(shortcut);
-    showScreen('form-screen');
+// 🔥 새로운 단축어 관리 함수들
+function openShortcut(shortcutId) {
+    const shortcut = AppState.shortcuts.find(s => s.id === shortcutId);
+    if (shortcut) {
+        AppState.currentShortcut = shortcut;
+        renderDataForm(shortcut);
+        showScreen('form-screen');
+    }
+}
+
+function copyShortcutUrl(shortcutId) {
+    const shortcutUrl = `${window.location.origin}${window.location.pathname}?shortcut=${shortcutId}`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shortcutUrl).then(() => {
+            alert('단축어 URL이 복사되었습니다!\n이 URL을 홈 화면에 추가하면 원터치로 입력할 수 있습니다.');
+        }).catch(() => {
+            showUrlDialog(shortcutUrl);
+        });
+    } else {
+        showUrlDialog(shortcutUrl);
+    }
+}
+
+function showUrlDialog(url) {
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    `;
+    
+    dialog.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 100%;">
+            <h3>단축어 URL</h3>
+            <p>이 URL을 홈 화면에 추가하면 원터치로 데이터를 입력할 수 있습니다:</p>
+            <textarea readonly style="width: 100%; height: 80px; margin: 1rem 0; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">${url}</textarea>
+            <div style="text-align: right;">
+                <button onclick="document.body.removeChild(this.closest('div').parentElement)" style="padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">닫기</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+}
+
+function editShortcut(shortcutId) {
+    const shortcut = AppState.shortcuts.find(s => s.id === shortcutId);
+    if (shortcut) {
+        // 데이터베이스 정보를 다시 불러와서 수정 화면으로
+        const database = AppState.databases.find(db => db.id === shortcut.databaseId);
+        if (database) {
+            selectDatabase(database).then(() => {
+                // 기존 데이터로 폼 채우기
+                document.getElementById('shortcut-name').value = shortcut.name;
+                document.getElementById('include-content').checked = shortcut.includeContent;
+                
+                // 속성들 선택 및 기본값 설정
+                Object.keys(shortcut.properties).forEach(propName => {
+                    const checkbox = document.querySelector(`input[name="property"][value="${propName}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        checkbox.dispatchEvent(new Event('change'));
+                        
+                        // 기본값 설정
+                        setTimeout(() => {
+                            const propInfo = shortcut.properties[propName];
+                            if (propInfo.type === 'date' && propInfo.defaultValue) {
+                                const typeSelect = document.querySelector(`#default-type-${propName}`);
+                                const dateInput = document.querySelector(`#default-${propName}`);
+                                
+                                if (['today', 'tomorrow', 'day-after-tomorrow', 'next-week', 'next-month'].includes(propInfo.defaultValue)) {
+                                    if (typeSelect) typeSelect.value = propInfo.defaultValue;
+                                    if (dateInput) dateInput.value = getRelativeDate(propInfo.defaultValue);
+                                } else {
+                                    if (dateInput) dateInput.value = propInfo.defaultValue;
+                                }
+                            } else {
+                                const defaultInput = document.querySelector(`#default-${propName}`);
+                                if (defaultInput) {
+                                    if (defaultInput.type === 'checkbox') {
+                                        defaultInput.checked = propInfo.defaultValue;
+                                    } else {
+                                        defaultInput.value = propInfo.defaultValue || '';
+                                    }
+                                }
+                            }
+                        }, 100);
+                    }
+                });
+                
+                // 기존 단축어 삭제 (수정이므로)
+                deleteShortcut(shortcutId, false);
+            });
+        }
+    }
+}
+
+function deleteShortcut(shortcutId, confirm = true) {
+    if (confirm && !window.confirm('이 단축어를 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    AppState.shortcuts = AppState.shortcuts.filter(s => s.id !== shortcutId);
+    saveToStorage();
+    renderShortcutsList();
 }
 
 function renderDataForm(shortcut) {
@@ -877,6 +1039,22 @@ function handleClearAllData() {
 
 // Initialize App
 function initApp() {
+    // 🔥 URL 파라미터로 직접 단축어 실행 (핵심 기능!)
+    const urlParams = new URLSearchParams(window.location.search);
+    const shortcutId = urlParams.get('shortcut');
+    const action = urlParams.get('action');
+    
+    if (shortcutId && AppState.apiToken) {
+        const shortcut = AppState.shortcuts.find(s => s.id === shortcutId);
+        if (shortcut) {
+            // 🎯 원터치 실행: 바로 입력 폼으로!
+            AppState.currentShortcut = shortcut;
+            renderDataForm(shortcut);
+            showScreen('form-screen');
+            return; // 다른 로직 실행하지 않음
+        }
+    }
+    
     // Check if we have a saved token
     if (AppState.apiToken) {
         if (AppState.shortcuts.length > 0) {
@@ -913,20 +1091,9 @@ function initApp() {
     document.getElementById('clear-all-data').addEventListener('click', handleClearAllData);
     
     // Handle URL parameters for shortcuts
-    const urlParams = new URLSearchParams(window.location.search);
-    const shortcutId = urlParams.get('shortcut');
-    const action = urlParams.get('action');
-    
-    if (shortcutId) {
-        const shortcut = AppState.shortcuts.find(s => s.id === shortcutId);
-        if (shortcut) {
-            openShortcut(shortcut);
-        }
-    } else if (action === 'new-shortcut') {
-        if (AppState.apiToken) {
-            renderDatabaseList();
-            showScreen('database-screen');
-        }
+    if (action === 'new-shortcut' && AppState.apiToken) {
+        renderDatabaseList();
+        showScreen('database-screen');
     }
 }
 
